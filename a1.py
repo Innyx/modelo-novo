@@ -3,7 +3,7 @@ import json
 import pandas as pd
 
 # Diretório onde estão os JSONs gerados pela primeira etapa
-JSON_DIR = "json_s4_oficial"   # ajuste conforme necessário
+JSON_DIR = "reprocessament_9_ano"   # ajuste conforme necessário
 
 def index_to_letter(idx):
     """Converte índice (0,1,2,3) para letra (A, B, C, D)."""
@@ -30,71 +30,81 @@ def process_json_files(json_dir):
             file_path = os.path.join(json_dir, file)
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
+                registros_json = data
                 # Se o objeto for uma lista, itera sobre ela; se for dict, usa os valores
                 if isinstance(data, list):
                     registros_json = data
                 elif isinstance(data, dict):
-                    registros_json = list(data.values())
+                    # registros_json = list(data.values())
+                    print('aqui')
+                    print(registros_json)
                 else:
                     continue
-                for reg in registros_json:
-                    qrcode = reg.get("qrcode", {})
-                    if isinstance(qrcode, dict):
-                        curso_id = qrcode.get("curso_id")
-                        avaliacao_id = qrcode.get("avaliacao_id")
-                        estudante_id = qrcode.get("estudante_id", "")
-                    else:
-                        curso_id = None
-                        avaliacao_id = None
-                        estudante_id = ""
+                # for reg in registros_json:
+                # print(reg)
+                qrcode = registros_json.get("qrcode", {})
+                if isinstance(qrcode, dict):
+                    curso_id = qrcode.get("curso_id")
+                    avaliacao_id = qrcode.get("avaliacao_id")
+                    estudante_id = qrcode.get("estudante_id", "")
+                    filename = qrcode.get("filename", "")
+                else:
+                    curso_id = None
+                    avaliacao_id = None
+                    estudante_id = ""
+                    filename = ""
+
+                questoes = registros_json.get("questoes_retangulos", {})
+                for q_key, alternativas in questoes.items():
+                    try:
+                        questao_num = int(q_key.split("_")[1])
+                    except Exception:
+                        continue  # pula se o formato não estiver correto
                     
-                    questoes = reg.get("questoes_retangulos", {})
-                    for q_key, alternativas in questoes.items():
-                        try:
-                            questao_num = int(q_key.split("_")[1])
-                        except Exception:
-                            continue  # pula se o formato não estiver correto
-                        
-                        # Define nro_alternativa e alternativa_id conforme regras:
-                        if alternativas is None:
-                            nro_alternativa = None
-                            alternativa_id = str(questao_num)
+                    # Define nro_alternativa e alternativa_id conforme regras:
+                    if alternativas is None:
+                        nro_alternativa = None
+                        alternativa_id = str(questao_num)
+                    else:
+                        if len(alternativas) == 1:
+                            nro_alternativa = alternativas[0] + 1  # converte de 0-base para 1-base
+                            alternativa_id = f"{questao_num}{index_to_letter(alternativas[0])}"
+                        elif len(alternativas) >= 2:
+                            # Se houver exatamente duas marcações, retorna "N" sem o símbolo de "+"
+                            nro_alternativa = "N"
+                            alternativa_id = f"{questao_num}N"
                         else:
-                            if len(alternativas) == 1:
-                                nro_alternativa = alternativas[0] + 1  # converte de 0-base para 1-base
-                                alternativa_id = f"{questao_num}{index_to_letter(alternativas[0])}"
-                            elif len(alternativas) >= 2:
-                                # Se houver exatamente duas marcações, retorna "N" sem o símbolo de "+"
-                                nro_alternativa = "N"
-                                alternativa_id = f"{questao_num}N"
-                            else:
-                                nro_alternativa = None
-                                alternativa_id = f"{questao_num}+{len(alternativas)}"
+                            nro_alternativa = None
+                            alternativa_id = f"{questao_num}+{len(alternativas)}"
+                    
+                    registro_linha = {
+                        "data": None,
+                        "pergunta_id": None,
+                        "resposta_id": None,
+                        "respostas_omr_markedtargets": None,
+                        "respostas_omr_n_markedtargets": None,
+                        "respostas_omr_one_markedtarget": None,
+                        "resultado_id": None,
+                        "simulado_id": None,
+                        "questao_id": questao_num,
+                        "nro_alternativa": None,
+                        "alternativa_id": alternativa_id,
+                        "resultado_resposta_registro_id": None,
+                        "curso_id": curso_id,
+                        "avaliacao_id": avaliacao_id,
+                        "estudante_id": estudante_id,
+                        "filename": filename
+                    }
+                    
+                    registros.append(registro_linha)
                         
-                        registro_linha = {
-                            "data": None,
-                            "pergunta_id": None,
-                            "resposta_id": None,
-                            "respostas_omr_markedtargets": None,
-                            "respostas_omr_n_markedtargets": None,
-                            "respostas_omr_one_markedtarget": None,
-                            "resultado_id": None,
-                            "simulado_id": None,
-                            "questao_id": questao_num,
-                            "nro_alternativa": None,
-                            "alternativa_id": alternativa_id,
-                            "resultado_resposta_registro_id": None,
-                            "curso_id": curso_id,
-                            "avaliacao_id": avaliacao_id,
-                            "estudante_id": estudante_id,
-                            
-                        }
-                        registros.append(registro_linha)
     return registros
 
 def main():
     registros = process_json_files(JSON_DIR)
+    print(f"Total de registros processados: {len(registros)}")
     df = pd.DataFrame(registros)
+    print(df)
     # Converte 'nro_alternativa' para inteiro se possível (usando Int64 para permitir nulos)
     try:
         df["nro_alternativa"] = pd.to_numeric(df["nro_alternativa"], errors="coerce").astype("Int64")
@@ -104,7 +114,7 @@ def main():
     # Garante que 'estudante_id' seja string
     df["estudante_id"] = df["estudante_id"].astype(str)
     print(df.head())
-    df.to_csv("frr_4.csv", index=False)
+    df.to_csv("frr_5_v3.csv", index=False)
 
 if __name__ == "__main__":
     main()

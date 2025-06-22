@@ -1,8 +1,8 @@
 import os
-
+import pandas as pd 
 # --- Configurações ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.join(BASE_DIR, 's4_oficial_35.847_arq')  # Pasta raiz com subpastas de regiões
+PARENT_DIR = os.path.join(BASE_DIR, 'contagem')  # Pasta raiz com subpastas de regiões
 TARGET_EXTS = ('.jpg', '.jpeg', '.png')
 
 
@@ -23,7 +23,10 @@ def main():
     para uma sequência numérica contínua de 1 até N.
     """
     renomea_pastas()
-    counter = 36201  # Inicia a contagem a partir de 36201
+    resumo = {"old_name": [], "new_name": []}
+    df = pd.DataFrame()
+    
+    counter = 105993  # Inicia a contagem a partir de 72048
     # Percorre as regiões
     for region in sorted(os.listdir(PARENT_DIR)):
         region_dir = os.path.join(PARENT_DIR, region)
@@ -42,6 +45,8 @@ def main():
                 name, ext = os.path.splitext(filename)
                 new_name = f"{counter}{ext.lower()}"
                 src = os.path.join(folder, filename)
+                resumo["old_name"].append(filename)
+                resumo["new_name"].append(new_name)
                 dst = os.path.join(folder, new_name)
                 # Verifica se o destino já existe
                 while os.path.exists(dst):
@@ -56,6 +61,10 @@ def main():
             for char in caracters:
                 if char in folder:
                     folder = folder.replace(char, ' ')    
+
+    # Salva o resumo em um DataFrame e exporta para CSV
+    df = pd.DataFrame(resumo)
+    df.to_csv('renomeacao_resultados_v2.csv', sep=';', index=False)
     print(f"Renomeação concluída. Total de arquivos: {counter-1}")
 
 if __name__ == '__main__':

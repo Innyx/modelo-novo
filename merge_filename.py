@@ -1,23 +1,28 @@
 import os
-import json
-import time
-import shutil
-import concurrent.futures
-import cv2
-import numpy as np
 import pandas as pd
 
-f_resultados = pd.read_csv("f_resultados_sim03_comp_manual.csv")
+f_resultados = pd.read_csv("f_resultados_5.csv", dtype={"estudante_id": str, 'simulado_id': str, 'avaliacao_id': str, 'curso_id': str, 'estudante_registro_id': str, 'presenca_id': str})
+comp_manual = pd.read_excel("Computacao_manual.xlsx", dtype=str)
 
-comp_manaual = pd.read_excel("Computação Manual.xlsx", dtype={"estudante_id": str})
-
-merged = pd.merge(f_resultados, comp_manaual, on="estudante_id", how="inner")
-
-
-merged.drop(columns=["cartao_resposta_x", 'Assessor(a)', 'presenca_id_y', 'filename_x', 'STATUS', 'filename_y'], inplace=True)
-merged.rename(columns={"presenca_id_x": "presenca_id", 'cartao_resposta_y': 'cartao_resposta'}, inplace=True)
+merged = pd.merge(f_resultados, comp_manual, on="filename", how="inner")
+merged['cartao_resposta'] = merged['public_url']
 
 print(merged.columns.to_list())
+merged.drop(columns=["public_url", 'Assessor', 'filename', 'estudante_id_x'], inplace=True)
+merged.rename(columns={"presenca_id_x": "presenca_id", 'cartao_resposta_y': 'cartao_resposta', 'estudante_id_y': 'estudante_id'}, inplace=True)
+
+ordem  = ['resultado_id','simulado_id'	,'curso_id'	,'avaliacao_id'	,'estudante_registro_id',
+        'estudante_id'	,'cartao_resposta', 'presenca_id','informacoes_presenca_markedtargets', 
+        'informacoes_presenca_n_markedtargets','informacoes_presenca_one_markedtarget'	,'deficiencia_id'
+        ,'codigos_deficiencia_markedtargets','codigos_deficiencia_n_markedtargets', 'codigos_deficiencia_one_markedtarget']
+merged = merged[ordem]  
+
+merged['resultado_id'] = merged['simulado_id'] + '-' + merged['estudante_id']
+
 merged.to_excel("merged_resultados.xlsx", index=False)
+
+
+
+
 
 

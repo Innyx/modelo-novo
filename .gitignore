@@ -1,4 +1,17 @@
-s4_oficial_35.847_arq/
-correcao_s4/
-comp_manual/
+# Ignora todas as pastas e arquivos que não têm extensão .py
 
+# Ignora tudo
+*
+
+# Exceto arquivos .py
+!*.py
+
+# Exceto este próprio .gitignore
+!.gitignore
+
+# Exceto pastas (para permitir busca recursiva por .py)
+!*/
+
+# Ignore Python cache files
+__pycache__/
+*.py[cod]

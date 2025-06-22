@@ -12,7 +12,7 @@ import pandas as pd
 # deixar juntas todas as pastas de computacao manual
 PARENT_DIR = "comp_manual"
 # Arquivo JSON único de saída
-OUTPUT_JSON_FILE = "json_comp/resultado.json"
+OUTPUT_JSON_FILE = "json_comp/resultado2.json"
 # Sufixo para a pasta de compensação manual (quando não achamos estudante_id na planilha)
 MANUAL_COMP_DIR_SUFFIX = "_comp_manual"
 # Tamanho máximo para recorte
@@ -87,7 +87,7 @@ def processar_imagem(image_path, mapping):
     base_filename = os.path.basename(image_path)
     estudante_id = mapping.get(base_filename, "Unknown")
     # Agora, definindo curso_id e avaliacao_id como None
-    qr_data = {"estudante_id": estudante_id, "curso_id": None, "avaliacao_id": None}
+    qr_data = {"estudante_id": estudante_id, "curso_id": None, "avaliacao_id": None,'filename': base_filename}
     
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
@@ -138,7 +138,7 @@ def process_image(img_path, mapping):
 def main():
     start_time = time.perf_counter()
     # Carrega o mapeamento a partir da planilha gerada pelo iter.py ("imagens_simulados.xlsx")
-    df_map = pd.read_excel("Computação Manual 2.xlsx")
+    df_map = pd.read_excel("Computacao_manual.xlsx")
     # Cria um dicionário: chave = nome do arquivo, valor = estudante_id (convertido para inteiro e depois para string)
     mapping = {}
     for _, row in df_map.iterrows():
